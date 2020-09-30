@@ -24,7 +24,8 @@ static struct rule {
 
 	{" +",	NOTYPE},				// spaces
 	{"\\+", '+'},					// plus
-	{"==", EQ}						// equal
+	{"==", EQ},						// equal
+	
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -79,9 +80,11 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
-					default: panic("please implement me");
+					
+					default: 
+						panic("please implement me");
 				}
-
+				nr_token++;
 				break;
 			}
 		}
@@ -91,7 +94,7 @@ static bool make_token(char *e) {
 			return false;
 		}
 	}
-
+	nr_token--;
 	return true; 
 }
 

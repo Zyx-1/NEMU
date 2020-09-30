@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <stdint.h>
 
 void cpu_exec(uint32_t);
 
@@ -36,7 +37,77 @@ static int cmd_q(char *args) {
 	return -1;
 }
 
+
 static int cmd_help(char *args);
+	
+
+static int cmd_si(char *args) {
+	char *read = strtok(args, " ");
+	if (read == NULL)
+		cpu_exec(1);
+	else{
+		int num = atoi(read);
+		cpu_exec(num);
+	}
+	return 0;
+}
+
+static int cmd_info(char *args){
+	char *read = strtok(args, " ");
+	if(strcmp(read, "r") == 0){
+		printf("eax : %x\n", cpu.eax);
+		printf("ecx : %x\n", cpu.eax);
+		printf("edx : %x\n", cpu.eax);
+		printf("ebx : %x\n", cpu.eax);
+		printf("esp : %x\n", cpu.eax);
+		printf("ebp : %x\n", cpu.eax);
+		printf("esi : %x\n", cpu.eax);
+		printf("edi : %x\n", cpu.eax);
+		return 0;
+	}
+	printf("Wrong Input! \n");
+	return 1;
+}
+
+static int cmd_x(char *args){
+	if(args == NULL){
+		printf("Wrong Input! \n");
+		return 1;
+	}
+	char *read = strtok(args, " ");
+	if(read == NULL){
+		printf("Wrong Input! \n");
+		return 1;
+	}
+	int n = atoi(read);	
+	char *EXPR = strtok(NULL, " ");
+	if(EXPR == NULL){
+		printf("Wrong Input! \n");
+		return 1;
+	}
+	if(strtok(NULL, " ") != NULL){
+		printf("Wrong Input! \n");
+		return 1;
+	}	
+	bool flag = true;
+	if(flag != true){
+		printf("ERROR \n");
+		return 0;	
+	}
+	char *str;
+	swaddr_t addrass = strtol(EXPR, &str, 16);
+	int i, j;	
+	for(i = 0; i < n; i++){
+		uint32_t data = swaddr_read(addrass + i * 4, 4);
+		printf("0x%08x ", addrass + i * 4);
+		for(j = 0; j < 4; j++){
+			printf("0x%02x ", data & 0xff);
+			data = data >> 8;
+		}
+		printf("\n");
+	}
+	return 0;
+}
 
 static struct {
 	char *name;
@@ -46,13 +117,14 @@ static struct {
 	{ "help", "Display informations about all supported commands", cmd_help },
 	{ "c", "Continue the execution of the program", cmd_c },
 	{ "q", "Exit NEMU", cmd_q },
-
+	{ "si", "Single step", cmd_si },
+	{ "info r", "Print regiters", cmd_info },
+	{ "x", "Scan memory", cmd_x}
 	/* TODO: Add more commands */
 
 };
 
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
-
 static int cmd_help(char *args) {
 	/* extract the first argument */
 	char *arg = strtok(NULL, " ");
