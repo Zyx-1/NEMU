@@ -243,7 +243,7 @@ int eval(int p, int q){
 		}
 		else if(tokens[p].type == 262){
 			int j = 0, sl = 1, sw = 1;
-			for( ; j < 0 && sl !=  0 && sw != 0 ; j++){
+			for( ; j < 8 && sl !=  0 && sw != 0 ; j++){
 				sl = strcmp(tokens[p].str+1, regsl[j]);
 				sw = strcmp(tokens[p].str+1, regsw[j]);
 			}
