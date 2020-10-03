@@ -230,9 +230,9 @@ int find_dominant_operator(int p, int q){
 
 int eval(int p, int q){
 	int i = 0;
-	//if(p > q)
-		//assert(0);
-	if(p == q){
+	if(p > q)
+		assert(0);
+	else if(p == q){
 		if(tokens[p].type == 264){
 			sscanf(tokens[p].str, "%d", &i);
 			return i;
