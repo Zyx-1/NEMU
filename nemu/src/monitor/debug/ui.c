@@ -56,13 +56,13 @@ static int cmd_info(char *args){
 	char *read = strtok(args, " ");
 	if(strcmp(read, "r") == 0){
 		printf("eax : %x\n", cpu.eax);
-		printf("ecx : %x\n", cpu.eax);
-		printf("edx : %x\n", cpu.eax);
-		printf("ebx : %x\n", cpu.eax);
-		printf("esp : %x\n", cpu.eax);
-		printf("ebp : %x\n", cpu.eax);
-		printf("esi : %x\n", cpu.eax);
-		printf("edi : %x\n", cpu.eax);
+		printf("ecx : %x\n", cpu.ecx);
+		printf("edx : %x\n", cpu.edx);
+		printf("ebx : %x\n", cpu.ebx);
+		printf("esp : %x\n", cpu.esp);
+		printf("ebp : %x\n", cpu.ebp);
+		printf("esi : %x\n", cpu.esi);
+		printf("edi : %x\n", cpu.edi);
 		return 0;
 	}
 	else if(strcmp(read, "w") == 0){
