@@ -1,5 +1,6 @@
 #include "monitor/watchpoint.h"
 #include "monitor/expr.h"
+#include <regex.h>
 
 #define NR_WP 32
 
@@ -20,5 +21,84 @@ void init_wp_pool() {
 
 /* TODO: Implement the functionality of watchpoint */
 
+WP* new_wp(char *s){
+	WP *help;
+	bool success;
+	if(free_ == NULL)
+		assert(0);
 
+	help = free_;
+	free_ = free_->next;
+	strcpy(help->str, s);
+	help->value = expr(s, &success);
 
+	int status;
+	int cflags = REG_EXTENDED;
+	regmatch_t pmatch[1];
+	const size_t nmatch = 1;
+	regex_t reg;
+	const char * pattern = "\\$[eE][iI][pP][=][=]0x[0-9a-fA-F]{1,8}";
+	regcomp(&reg, pattern, cflags);
+	status = regexec(&reg, s, nmatch, pmatch, 0);
+	if(status == REG_NOMATCH)
+		help->type = 'w';
+	else if(status == 0)
+		help->type = 'b';
+
+	help->Enb = 'Y';
+	help->next = head;
+	head = help;
+	printf("The number is %d\n", help->NO);
+	return help;
+}
+
+void free_wp(int number){
+	WP *p, *q;
+	q = NULL;
+	p = head;
+	while(p != NULL && p->NO != number){
+		q = p;
+		p = p->next;
+	}
+	if(p == NULL) assert(0);
+	if(q == NULL){
+		head = head->next;
+		p->value = 0;
+		memset(p->str, 0, sizeof(p->str));
+		p->type = ' ';
+		p->Enb = 'N';
+		p->next = free_;
+		free_ = p;
+	}
+	else{
+		q->next = p->next;
+		p->value = 0;
+		memset(p->str, 0, sizeof(p->str));
+		p->type = ' ';
+		p->Enb = 'N';
+		p->next = free_;
+		free_ = p;
+	}
+	printf("Free the %d\n", p->NO);
+	return;
+}
+
+int judge_wp(){
+	WP *p;
+	bool success;
+	p = head;
+	if(p == NULL) return 0;
+	while(p){
+		p->newvalue = expr(p->str, &success);
+		if(p->newvalue != p->value) return -1;
+		p = p->next;
+	}
+	return 0;
+}
+
+void print_wp(){
+	printf("Num \tType\tEnb\t\t Value\t\t What\n");
+	int i;	
+	for(i = 0; i < NR_WP; i++)
+		printf("%4d\t%c\t%c\t\t0%x\t%s\n", wp_pool[i].NO, wp_pool[i].type, wp_pool[i].Enb, wp_pool[i].value, wp_pool[i].str);
+}

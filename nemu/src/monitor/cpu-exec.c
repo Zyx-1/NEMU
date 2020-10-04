@@ -1,5 +1,6 @@
 #include "monitor/monitor.h"
 #include "cpu/helper.h"
+#include "monitor/watchpoint.h"
 #include <setjmp.h>
 
 /* The assembly code of instructions executed is only output to the screen
@@ -73,6 +74,12 @@ void cpu_exec(volatile uint32_t n) {
 #endif
 
 		/* TODO: check watchpoints here. */
+		int judge = judge_wp();
+		if(judge == -1){
+			nemu_state = STOP;
+			printf("Triggered the monitoring point\n");
+			return;
+		}
 
 
 #ifdef HAS_DEVICE

@@ -65,6 +65,10 @@ static int cmd_info(char *args){
 		printf("edi : %x\n", cpu.eax);
 		return 0;
 	}
+	else if(strcmp(read, "w") == 0){
+		print_wp();
+		return 0;
+	}			
 	printf("Wrong Input! \n");
 	return 1;
 }
@@ -117,6 +121,17 @@ static int cmd_p(char *args){
 	return 0;
 }
 
+static int cmd_d(char *args){
+	char *read = strtok(args, " ");
+	if(read != NULL){
+		int num = atoi(read);
+		free_wp(num);
+		return 0;
+	}
+	printf("Wrong input\n");
+	return 1;
+}
+
 static struct {
 	char *name;
 	char *description;
@@ -128,7 +143,8 @@ static struct {
 	{ "si", "Single step", cmd_si },
 	{ "info", "Print regiters", cmd_info },
 	{ "x", "Scan memory", cmd_x},
-	{ "p", "Expression evaluation", cmd_p}
+	{ "p", "Expression evaluation", cmd_p},
+	{ "d", "Delete a watchpoint", cmd_d}
 	/* TODO: Add more commands */
 
 };
