@@ -278,8 +278,10 @@ int eval(int p, int q){
 		}
 		else if(tokens[p].type == 266)
 			return cpu.eip;
-		else
-			assert(0);
+		else{
+			assert("Wrong input\n");
+			return 0;
+		}
 	}
 	else if(check_pare(p, q) == true)
 		return eval(p + 1, q - 1);
@@ -317,7 +319,7 @@ int eval(int p, int q){
 				if(v1 || v2) return 1;
 				else return 0;
 			default: 
-				assert("Wrong input");
+				assert("Wrong input\n");
 				return 0;				
 		}
 	}
