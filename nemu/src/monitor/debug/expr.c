@@ -111,7 +111,7 @@ static bool make_token(char *e) {
 					default: 
 						tokens[nr_token].type = rules[i].token_type;
 						tokens[nr_token].priority = rules[i].priority;
-						strncpy(tokens[nr_token].str, tmp, substr_len);
+						strncpy(tokens[nr_token].str, substr_start, substr_len);
 						tokens[nr_token].str[substr_len] = '\0';
 						nr_token++;
 				}
@@ -174,7 +174,7 @@ uint32_t eval(int l, int r){
 		return 0;
 	}
 	if(l == r){
-		uint32_t num = 1;
+		uint32_t num = 0;
 		if(tokens[l].type == NUMBER)
 			sscanf(tokens[l].str, "%d", &num);
 		if(tokens[l].type == HEX)
