@@ -27,10 +27,11 @@ static struct rule {
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	{" +",	NOTYPE, 0},				// spaces
+	{"\\b[0-9]+\\b", NUMBER, 0},
+	{" +",	NOTYPE, 0},				
 	{"	+", NOTYPE, 0},	
-	{"\\+", '+', 4},					// plus
-	{"==", EQ, 3},						// equal
+	{"\\+", '+', 4},					
+	{"==", EQ, 3},						
 	{"\\(", '(', 7},
 	{"\\)", ')', 7},
 	{"\\*", '*', 5},
@@ -43,7 +44,7 @@ static struct rule {
 	{"\\b0[xX][0-9a-fA-F]+\\b", HEX, 0},
 	{"\\$[a-zA-Z]+", REGISTER, 0},
 	{"\\b[a-zA-Z_0-9]+", MARK, 0},
-	{"\\b[0-9]+\\b", NUMBER, 0}
+
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
