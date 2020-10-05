@@ -175,8 +175,10 @@ uint32_t eval(int l, int r){
 	}
 	if(l == r){
 		uint32_t num = 0;
-		if(tokens[l].type == NUMBER)
+		if(tokens[l].type == NUMBER){
 			sscanf(tokens[l].str, "%d", &num);
+			return num;
+		}
 		if(tokens[l].type == HEX)
 			sscanf(tokens[l].str, "%x", &num);
 		if(tokens[l].type == REGISTER){
