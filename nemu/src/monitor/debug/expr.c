@@ -135,7 +135,7 @@ bool check_parentheses(int l, int r){
 		for(i = l + 1; i < r; i++){
 			if(tokens[i].type == '(') lc++;
 			if(tokens[i].type == ')') rc++;
-			if(lc > rc) return false;
+			if(rc > lc) return false;
 		}
 		if(lc == rc) return true;
 	}
@@ -194,16 +194,14 @@ uint32_t eval(int l, int r){
 				if(tokens[l].str[1] == 'x' || tokens[l].str[1] == 'p' || tokens[l].str[1] == 'i'){
 					int i;
 					for(i = R_AX; i <= R_DI; i++)
-						if(strcmp(tokens[l].str, regsw[i]) == 0)
-							break;
-						num = reg_w(i);
+						if(strcmp(tokens[l].str, regsw[i]) == 0) break;
+					num = reg_w(i);
 				}
 				else if(tokens[l].str[1] == 'l' || tokens[l].str[1] == 'h'){
 					int i;
 					for(i = R_AL; i <= R_BH; i++)
-						if(strcmp(tokens[l].str, regsb[i]) == 0)
-							break;
-						num = reg_b(i);
+						if(strcmp(tokens[l].str, regsb[i]) == 0) break;
+					num = reg_b(i);
 				}
 				else assert(1);
 			}
@@ -232,14 +230,14 @@ uint32_t eval(int l, int r){
 			uint32_t v1 = eval(l, op - 1);
 			uint32_t v2 = eval(op + 1, r);
 			switch(tokens[op].type){
-				case '+': return v1 + v2;
-				case '-': return v1 - v2;
-				case '*': return v1 * v2;
-				case '/': return v1 / v2;
-				case EQ: return v1 == v2;
-				case NEQ: return v1 != v2;
-				case AND: return v1 && v2;
-				case OR: return v1 || v2;
+				case '+': return v1+v2;
+				case '-': return v1-v2;
+				case '*': return v1*v2;
+				case '/': return v1/v2;
+				case EQ: return v1==v2;
+				case NEQ: return v1!=v2;
+				case AND: return v1&&v2;
+				case OR: return v1||v2;
 				default:
 				break;
 			}
@@ -257,11 +255,11 @@ uint32_t expr(char *e, bool *success) {
 	/* TODO: Insert codes to evaluate the expression. */
 	int i;
 	for(i = 0; i < nr_token; i++){
-		if((tokens[i].type = '*') && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
+		if(tokens[i].type == '*' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
 			tokens[i].type = POINTER;
 			tokens[i].priority = 6;		
 		}
-		if((tokens[i].type = '-') && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
+		if(tokens[i].type == '-' && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
 			tokens[i].type = MINUS;
 			tokens[i].priority = 6;		
 		}
