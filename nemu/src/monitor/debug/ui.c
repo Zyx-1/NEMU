@@ -59,14 +59,13 @@ static int cmd_info(char *args){
 		for(i = R_EAX; i <= R_EDI; i++)
 			printf("%s\t0x%08x\n", regsl[i], reg_l(i));
 		printf("eip\t0x%08x\n", cpu.eip);
-		return 0;
 	}
 	else if(strcmp(read, "w") == 0){
 		info_wp();
-		return 0;
+
 	}			
-	printf("Wrong Input! \n");
-	return 1;
+	else assert(0);
+	return 0;
 }
 
 static int cmd_x(char *args){
