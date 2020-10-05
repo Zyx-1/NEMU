@@ -113,7 +113,7 @@ static int cmd_p(char *args){
 	bool success;
 	uint32_t i;
 	i = expr(args, &success);
-	printf("%d\n", i);
+	printf("0x%x:\t%d\n", i, i);
 	return 0;
 }
 
