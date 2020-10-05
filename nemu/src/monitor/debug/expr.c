@@ -206,42 +206,43 @@ uint32_t eval(int l, int r){
 				else assert(1);
 			}
 		}
-		
+			
 		return num;
 	}
-		else if(check_parentheses(l, r) == true)
-			return eval(l + 1, r - 1);
-		else{
-			int op = dominant_operator(l, r);
-			if(l == op || tokens[op].type == POINTER || tokens[op].type == MINUS || tokens[op].type == '!'){
-				uint32_t val = eval(l + 1, r);
-				switch(tokens[l].type){
-					case POINTER:
-						current_sreg = R_DS;
-						return swaddr_read(val, 4);
-					case MINUS:
-						return -val;
-					case '!':
-						return !val;
-					default:
-						Assert(1, "default\n");
-				}
-			}
-			uint32_t v1 = eval(l, op - 1);
-			uint32_t v2 = eval(op + 1, r);
-			switch(tokens[op].type){
-				case '+': return v1+v2;
-				case '-': return v1-v2;
-				case '*': return v1*v2;
-				case '/': return v1/v2;
-				case EQ: return v1==v2;
-				case NEQ: return v1!=v2;
-				case AND: return v1&&v2;
-				case OR: return v1||v2;
+	else if(check_parentheses(l, r) == true)
+		return eval(l + 1, r - 1);
+	else{
+		int op = dominant_operator(l, r);
+		if(l == op || tokens[op].type == POINTER || tokens[op].type == MINUS || tokens[op].type == '!'){
+			uint32_t val = eval(l + 1, r);
+		switch(tokens[l].type){
+				case POINTER:
+					current_sreg = R_DS;
+					return swaddr_read(val, 4);
+				case MINUS:
+					return -val;
+				case '!':
+					return !val;
 				default:
-				break;
+					Assert(1, "default\n");
 			}
-		}	
+		}
+		uint32_t v1 = eval(l, op - 1);
+		uint32_t v2 = eval(op + 1, r);
+		switch(tokens[op].type){
+			case '+':	printf("hhh\n"); 
+					return v1+v2;
+			case '-': return v1-v2;
+			case '*': return v1*v2;
+			case '/': return v1/v2;
+			case EQ: return v1==v2;
+			case NEQ: return v1!=v2;
+			case AND: return v1&&v2;
+			case OR: return v1||v2;
+			default:
+			break;
+		}
+	}		
 	assert(1);
 	return -123456;
 }
