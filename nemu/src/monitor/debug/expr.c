@@ -229,9 +229,9 @@ uint32_t eval(int l, int r){
 		}
 		uint32_t v1 = eval(l, op - 1);
 		uint32_t v2 = eval(op + 1, r);
+		printf("%d\t%d\n", v1, v2);		
 		switch(tokens[op].type){
-			case '+':	printf("hhh\n"); 
-					return v1+v2;
+			case '+': return v1+v2;
 			case '-': return v1-v2;
 			case '*': return v1*v2;
 			case '/': return v1/v2;
