@@ -1,5 +1,6 @@
 #include "monitor/watchpoint.h"
 #include "monitor/expr.h"
+#include "nemu.h"
 #include <regex.h>
 
 #define NR_WP 32
@@ -21,84 +22,86 @@ void init_wp_pool() {
 
 /* TODO: Implement the functionality of watchpoint */
 
-WP* new_wp(char *s){
-	WP *help;
-	bool success;
-	if(free_ == NULL)
-		assert(0);
-
-	help = free_;
+WP* new_wp(){
+	WP *f, *p;
+	f = free_;
 	free_ = free_->next;
-	strcpy(help->str, s);
-	help->value = expr(s, &success);
-
-	int status;
-	int cflags = REG_EXTENDED;
-	regmatch_t pmatch[1];
-	const size_t nmatch = 1;
-	regex_t reg;
-	const char * pattern = "\\$[eE][iI][pP][=][=]0x[0-9a-fA-F]{1,8}";
-	regcomp(&reg, pattern, cflags);
-	status = regexec(&reg, s, nmatch, pmatch, 0);
-	if(status == REG_NOMATCH)
-		help->type = 'w';
-	else if(status == 0)
-		help->type = 'b';
-
-	help->Enb = 'Y';
-	help->next = head;
-	head = help;
-	printf("The number is %d\n", help->NO);
-	return help;
-}
-
-void free_wp(int number){
-	WP *p, *q;
-	q = NULL;
+	free_->next = NULL;
 	p = head;
-	while(p != NULL && p->NO != number){
-		q = p;
-		p = p->next;
-	}
-	if(p == NULL) assert(0);
-	if(q == NULL){
-		head = head->next;
-		p->value = 0;
-		memset(p->str, 0, sizeof(p->str));
-		p->type = ' ';
-		p->Enb = 'N';
-		p->next = free_;
-		free_ = p;
+	if(p == NULL){
+		head = f;
+		p = head;
 	}
 	else{
-		q->next = p->next;
-		p->value = 0;
-		memset(p->str, 0, sizeof(p->str));
-		p->type = ' ';
-		p->Enb = 'N';
-		p->next = free_;
-		free_ = p;
+		while(p->next != NULL) p = p->next;
+		p->next = f;
 	}
-	printf("Free the %d\n", p->NO);
-	return;
+	return f;
 }
 
-int judge_wp(){
-	WP *p;
+void free_wp(WP *wp){
+	WP *p, *q;
+	p = free_;
+	if(p == NULL){
+		free_ = wp;
+		p = free_;
+	}
+	else{
+		while(p->next != NULL) p = p->next;
+		p->next = wp;
+	}
+	q = head;
+	if(head == NULL) assert(0);
+	if(head->NO == wp->NO)
+		head = head->next;
+	else{
+		while(q->next != NULL && q->next->NO != wp->NO) q = q->next;
+		if(q->next == NULL && q->NO == wp->NO) printf("Warning!");
+		else if(q->next->NO == wp->NO) q->next = q->next->next;
+		else assert(0);
+	}
+	wp->next = NULL;
+	wp->val = 0;
+	wp->b = 0;
+	wp->expr[0] = '\0';
+}
+
+bool check_wp(){
+	WP *f;
+	f = head;
+	bool flag = true;
 	bool success;
-	p = head;
-	if(p == NULL) return 0;
-	while(p){
-		p->newvalue = expr(p->str, &success);
-		if(p->newvalue != p->value) return -1;
-		p = p->next;
+	while(f != NULL){
+		uint32_t tmp_expr = expr(f->expr, &success);
+		if(!success) assert(1);
+		if(tmp_expr != f->val){
+			flag = false;
+			if(f->b){
+				printf("Hit breakpoint %d at 0x%08x\n", f->b, cpu.eip);
+				f = f->next;
+				continue;
+			}
+			printf("Watchpoint %d: %s\n", f->NO, f->expr);
+			printf("Old value: %d\n", f->val);
+			printf("New value: %d\n", tmp_expr);
+			f->val = tmp_expr;
+		}
+		f = f->next;
 	}
-	return 0;
+	return flag;
 }
 
-void print_wp(){
-	printf("Num \tType\tEnb\t\t Value\t\t What\n");
-	int i;	
-	for(i = 0; i < NR_WP; i++)
-		printf("%4d\t%c\t%c\t\t0x%x\t%s\n", wp_pool[i].NO, wp_pool[i].type, wp_pool[i].Enb, wp_pool[i].value, wp_pool[i].str);
+void delete_wp(int num){
+	WP *f;
+	f = &wp_pool[num];
+	free_wp(f);
+}
+
+void info_wp(){
+	WP *f;
+	f = head;
+	while(f != NULL){
+		printf("Watchpoint %d: %s = %d\n", f->NO, f->expr, f->val);
+		f = f->next;
+	}
 }

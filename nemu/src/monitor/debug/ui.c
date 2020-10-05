@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 void cpu_exec(uint32_t);
-
+int breakpoint_counter = 1;
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 char* rl_gets() {
 	static char *line_read = NULL;
@@ -62,7 +62,7 @@ static int cmd_info(char *args){
 		return 0;
 	}
 	else if(strcmp(read, "w") == 0){
-		print_wp();
+		info_wp();
 		return 0;
 	}			
 	printf("Wrong Input! \n");
@@ -117,11 +117,27 @@ static int cmd_p(char *args){
 	return 0;
 }
 
+static int cmd_b(char *args){
+	bool suc;
+	swaddr_t addr;
+	addr = expr(args+1, &suc);
+	if(!suc) assert(1);
+	sprintf(args, "$eip == 0x%x", addr);
+	printf("Breakpoint %d at 0x%x\n", breakpoint_counter, addr);
+	WP *f;
+	f = new_wp();
+	f->val = expr(args, &suc);
+	f->b = breakpoint_counter;
+	breakpoint_counter++;
+	strcpy(f->expr, args);
+	return 0;
+}
+
 static int cmd_d(char *args){
 	char *read = strtok(args, " ");
 	if(read != NULL){
 		int num = atoi(read);
-		free_wp(num);
+		delete_wp(num);
 		return 0;
 	}
 	printf("Wrong input\n");
@@ -140,6 +156,7 @@ static struct {
 	{ "info", "Print regiters", cmd_info },
 	{ "x", "Scan memory", cmd_x},
 	{ "p", "Expression evaluation", cmd_p},
+	{ "b", "Add breakpoint", cmd_b},	
 	{ "d", "Delete a watchpoint", cmd_d}
 	/* TODO: Add more commands */
 
