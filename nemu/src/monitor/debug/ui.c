@@ -133,6 +133,18 @@ static int cmd_b(char *args){
 	return 0;
 }
 
+static int cmd_w(char *args){
+	WP *f;
+	bool suc;
+	f = new_wp();
+	printf("Watchpoint %d: %s\n", f->NO, args);
+	f->val = expr(args, &suc);
+	strcpy(f->expr, args);
+	if(!suc) Assert(1, "Wrong input\n");
+	printf("Value : %d\n", f->val);
+	return 0;
+}
+
 static int cmd_d(char *args){
 	char *read = strtok(args, " ");
 	if(read != NULL){
@@ -156,6 +168,7 @@ static struct {
 	{ "info", "Print regiters", cmd_info },
 	{ "x", "Scan memory", cmd_x},
 	{ "p", "Expression evaluation", cmd_p},
+	{ "w", "Add watchpoint", cmd_w},	
 	{ "b", "Add breakpoint", cmd_b},	
 	{ "d", "Delete a watchpoint", cmd_d}
 	/* TODO: Add more commands */
