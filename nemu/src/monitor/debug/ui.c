@@ -115,7 +115,7 @@ static int cmd_x(char *args){
 
 static int cmd_p(char *args){
 	bool success;
-	int i;
+	uint32_t i;
 	i = expr(args, &success);
 	printf("%d\n", i);
 	return 0;
