@@ -213,7 +213,6 @@ uint32_t eval(int l, int r){
 		return eval(l + 1, r - 1);
 	else{
 		int op = dominant_operator(l, r);
-		printf("%d\n", op);
 		if(l == op || tokens[op].type == POINTER || tokens[op].type == MINUS || tokens[op].type == '!'){
 			uint32_t val = eval(l + 1, r);
 		switch(tokens[l].type){
@@ -229,8 +228,7 @@ uint32_t eval(int l, int r){
 			}
 		}
 		uint32_t v1 = eval(l, op - 1);
-		uint32_t v2 = eval(op + 1, r);
-		printf("%d\t%d\n", v1, v2);		
+		uint32_t v2 = eval(op + 1, r);		
 		switch(tokens[op].type){
 			case '+': return v1+v2;
 			case '-': return v1-v2;
