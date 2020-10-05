@@ -184,12 +184,10 @@ uint32_t eval(int l, int r){
 				int i;
 				for(i = R_EAX; i <= R_EDI; i++)
 					if(strcmp(tokens[l].str, regsl[i]) == 0) break;
-				if(i > R_EDI){
+					if(i > R_EDI)
 					if(strcmp(tokens[l].str, "eip") == 0)
 						num = cpu.eip;
-					else
-						Assert(1, "No register\n");
-				}
+					else Assert(1, "No register\n");
 				else num = reg_l(i);
 			}
 			else if(strlen(tokens[l].str) == 2){
@@ -247,7 +245,7 @@ uint32_t eval(int l, int r){
 			}
 		}	
 	assert(1);
-	return -1;
+	return -123456;
 }
 
 uint32_t expr(char *e, bool *success) {
