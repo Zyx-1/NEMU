@@ -1,5 +1,5 @@
 #include "nemu.h"
-#include <assert.h>
+
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
  */
@@ -7,38 +7,43 @@
 #include <regex.h>
 
 enum {
-	NOTYPE = 256, EQ, UEQ, log_AND, log_OR, log_NOT, Register, variable, number, hex ,eip
+	NOTYPE = 256, EQ, NEQ, AND, OR, MINUS, POINTER, NUMBER, HEX, REGISTER, MARK
 
 	/* TODO: Add more token types */
 
 };
 
+extern char *strtab;
+extern Elf32_Sym *symtab;
+extern int nr_tymtab_entry;
+
 static struct rule {
 	char *regex;
 	int token_type;
+	int priority;
 } rules[] = {
 
 	/* TODO: Add more rules.
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	{" +",	NOTYPE},				// spaces
-	{"\\+", '+'},					// plus
-	{"==", EQ},						// equal
-	{"\\(", '('},
-	{"\\)", ')'},
-	{"\\*", '*'},
+	{" +",	NOTYPE, 0},				// spaces
+	{"	+", NOTYPE, 0},	
+	{"\\+", '+', 4},					// plus
+	{"==", EQ, 3},						// equal
+	{"\\(", '(', 7},
+	{"\\)", ')', 7},
+	{"\\*", '*', 5},
 	{"/", '/'},
-	{"-", '-'},
-	{"!=", UEQ},
-	{"&&", log_AND},
-	{"\\|\\|", log_OR},
-	{"!", log_NOT},
-	{"0[xX][A-Fa-f0-9]{1,8}", hex},
-	{"\\$[a-dA-D][hlHL]|\\$[eE]?(ax|dx|cx|bx|bp|si|di|sp)", Register},
-	{"[a_zA_Z][a-zA-Z0-9_]*", variable},
-	{"[0-9]{1,10}", number},
-	{"\\$[Ee][Ii][Pp]", eip}
+	{"-", '-', 4},
+	{"!=", NEQ, 3},
+	{"&&", AND, 2},
+	{"\\|\\|", OR, 1},
+	{"!", '!', 6},
+	{"\\b0[xX][0-9a-fA-F]+\\b", HEX, 0},
+	{"\\$[a-zA-Z]+", REGISTER, 0},
+	{"\\b[a-zA-Z_0-9]+", MARK, 0},
+	{"\\b[0-9]+\\b", NUMBER, 0}
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -65,6 +70,7 @@ void init_regex() {
 typedef struct token {
 	int type;
 	char str[32];
+	int priority;
 } Token;
 
 Token tokens[32];
@@ -82,6 +88,7 @@ static bool make_token(char *e) {
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
 				char *substr_start = e + position;
+				char *tmp = e + position + 1;				
 				int substr_len = pmatch.rm_eo;
 
 				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
@@ -93,66 +100,21 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
-					case 257:
-						tokens[nr_token].type = 257;
-						strcpy(tokens[nr_token].str, "==");
-						break;
-					case 40:
-						tokens[nr_token].type = 40;
-						break;
-					case 41:
-						tokens[nr_token].type = 41;
-						break;
-					case 42:
-						tokens[nr_token].type = 42;
-						break;
-					case 47:
-						tokens[nr_token].type = 47;
-						break;
-					case 43:
-						tokens[nr_token].type = 43;
-						break;
-					case 45:
-						tokens[nr_token].type = 45;
-						break;
-					case 258:
-						tokens[nr_token].type = 258;
-						strcpy(tokens[nr_token].str, "!=");
-						break;
-					case 259:
-						tokens[nr_token].type = 259;
-						strcpy(tokens[nr_token].str, "&&");
-						break;
-					case 260:
-						tokens[nr_token].type = 257;
-						strcpy(tokens[nr_token].str, "||");
-						break;
-					case 261:
-						tokens[nr_token].type = 261;
-						break;
-					case 262:
-						tokens[nr_token].type = 262;
-						strncpy(tokens[nr_token].str, &e[position-substr_len], substr_len);
-						break;
-					case 263:
-						tokens[nr_token].type = 263;
-						strncpy(tokens[nr_token].str, &e[position-substr_len], substr_len);
-						break;
-					case 264:
-						tokens[nr_token].type = 264;
-						strncpy(tokens[nr_token].str, &e[position-substr_len], substr_len);
-						break;
-					case 265:
-						tokens[nr_token].type = 265;
-						strncpy(tokens[nr_token].str, &e[position-substr_len], substr_len);
-						break;
-					case 266:
-						tokens[nr_token].type = 266;
-						break;
+					case NOTYPE: break;
+					case REGISTER:
+						tokens[nr_token].type = rules[i].token_type;
+						tokens[nr_token].priority = rules[i].priority;
+						strncpy(tokens[nr_token].str, tmp, substr_len - 1);
+						tokens[nr_token].str[substr_len - 1] = '\0';
+						nr_token++;
 					default: 
-						nr_token--;
+						tokens[nr_token].type = rules[i].token_type;
+						tokens[nr_token].priority = rules[i].priority;
+						strncpy(tokens[nr_token].str, tmp, substr_len);
+						tokens[nr_token].str[substr_len] = '\0';
+						nr_token++;
 				}
-				nr_token++;
+				position += substr_len;
 				break;
 			}
 		}
@@ -162,168 +124,129 @@ static bool make_token(char *e) {
 			return false;
 		}
 	}
-	nr_token--;
 	return true; 
 }
 
-bool check_pare(int p, int q){
-	int left = 0, flag = 0;
-	if(tokens[p].type == 40){
-		left++;
-		int i;
-		for(i = p + 1; i <= p; i++){
-			if(tokens[p].type == 40)
-				left++;
-			else if(tokens[p].type == 41){
-				left--;
-				if(left == 0 && i != p)
-					flag = 1;
-				if(left < 0)
-					assert(0);
-			}
+bool check_parentheses(int l, int r){
+	int i;
+	if(tokens[l].type == '(' && tokens[r].type == ')'){
+		int lc = 0, rc = 0;
+		for(i = l + 1; i < r; i++){
+			if(tokens[i].type == '(') lc++;
+			if(tokens[i].type == ')') rc++;
+			if(lc > rc) return false;
 		}
-		if(left == 0 && tokens[q].type == 41 && flag != 1)
-			return 1;
-		else if(left == 1)
-			return 0;
-		else
-			assert(0);
+		if(lc == rc) return true;
 	}
-	else
-		return 0;
+	return false;
 }
 
-int find_dominant_operator(int p, int q){
-	int op = p, j = p, r = 0;
-	for( ; j <= p; j++){
-		if(tokens[j].type < 262 && tokens[j].type != '!'){
-			if(tokens[j].type == 40){
-				r++;
-				for(j = j + 1; tokens[j].type != 41 || r != 1; j++){
-					if(tokens[j].type == 40)
-						r++;
-					if(tokens[j].type == 41)
-						r--;
-				}
-				r = 0;
+int dominant_operator(int l, int r){
+	int i, j;
+	int mprio = 10;
+	int op = l;
+	for(i = l; i <= r; i++){
+		if(tokens[i].type == NUMBER|| tokens[i].type == HEX || tokens[i].type == REGISTER || tokens[i].type == MARK)
+			continue;
+		int cont = 0;
+		bool flag = true;
+		for(j = i - 1; j >= l; j--){
+			if(tokens[j].type == '(' && !cont){
+				flag = false;
+				break;
 			}
-			else if(tokens[j].type == 260)
-				op = j;
-			else if(tokens[j].type == 259 && (tokens[op].type < 260 || tokens[op].type <= 262))
-				op = j;
-			else if(tokens[j].type == 258 && (tokens[op].type < 259 || tokens[op].type <= 262))
-				op = j;
-			else if(tokens[j].type == 257 && (tokens[op].type < 258 || tokens[op].type <= 262))
-				op = j;
-			else if(tokens[j].type == '+' && (tokens[op].type < 256 || tokens[op].type <= 261))
-				op = j;
-			else if(tokens[j].type == '-' && (j == p || tokens[j - 1].type >= 256 || tokens[j - 1].type == ')') && (tokens[op].type < 256 || tokens[op].type >= 261))
-				op = j;
-			else if(tokens[j].type == '/' && (tokens[op].type >= 261 || tokens[op].type == '(' || tokens[op].type == '*' || tokens[op].type == '/'))
-				op = j;
-			else if(tokens[j].type == '*' && (j == p || (tokens[j - 1].type >= 256 || tokens[j - 1].type == ')')) && (tokens[op].type >= 261 || tokens[op].type == '(' || tokens[op].type == '*' || tokens[op].type == '/'))
-				op = j;
+			if(tokens[j].type == '(') cont--;
+			if(tokens[j].type == ')') cont++;
+		}
+		if(!flag) continue;
+		if(tokens[i].priority <= mprio){
+			mprio = tokens[i].priority;
+			op = i;
 		}
 	}
 	return op;
 }
 
-int eval(int p, int q){
-	int i = 0;
-	if(p > q){
-		assert("Wrong input\n");
-		return 0;	
+uint32_t eval(int l, int r){
+	if(l > r){
+		Assert(l > r, "Wrong input\n");
+		return 0;
 	}
-	else if(p == q){
-		if(tokens[p].type == 264){
-			sscanf(tokens[p].str, "%d", &i);
-			return i;
-		}
-		else if(tokens[p].type == 265){
-			sscanf(tokens[p].str, "%x", &i);
-			return i;
-		}
-		else if(tokens[p].type == 262){
-			int j = 0, sl = 1, sw = 1;
-			for( ; j < 8 && sl !=  0 && sw != 0 ; j++){
-				sl = strcmp(tokens[p].str+1, regsl[j]);
-				sw = strcmp(tokens[p].str+1, regsw[j]);
+	if(l == r){
+		uint32_t num = 0;
+		if(tokens[l].type == NUMBER)
+			sscanf(tokens[l].str, "%d", &num);
+		if(tokens[l].type == HEX)
+			sscanf(tokens[l].str, "%x", &num);
+		if(tokens[l].type == REGISTER){
+			if(strlen(tokens[l].str) == 3){
+				int i;
+				for(i = R_EAX; i <= R_EDI; i++)
+					if(strcmp(tokens[l].str, regsl[i]) == 0) break;
+				if(i > R_EDI){
+					if(strcmp(tokens[l].str, "eip") == 0)
+						num = cpu.eip;
+					else
+						Assert(1, "No register\n");
+				}
+				else num = reg_l(i);
 			}
-			if(sl == 0){
-				i = cpu.gpr[j]._32;
-				return i;
+			else if(strlen(tokens[l].str) == 2){
+				if(tokens[l].str[1] == 'x' || tokens[l].str[1] == 'p' || tokens[l].str[1] == 'i'){
+					int i;
+					for(i = R_AX; i <= R_DI; i++)
+						if(strcmp(tokens[l].str, regsw[i]) == 0)
+							break;
+						num = reg_w(i);
+				}
+				else if(tokens[l].str[1] == 'l' || tokens[l].str[1] == 'h'){
+					int i;
+					for(i = R_AL; i <= R_BH; i++)
+						if(strcmp(tokens[l].str, regsb[i]) == 0)
+							break;
+						num = reg_b(i);
+				}
+				else assert(1);
 			}
-			else if(sw == 0)
-				return cpu.gpr[j]._16;
-			else{
-				if(strcmp(tokens[p].str, "$al") == 0)
-					return reg_b(0);
-				if(strcmp(tokens[p].str+1, "cl") == 0)
-					return reg_b(1);
-				if(strcmp(tokens[p].str+1, "dl") == 0)
-					return reg_b(2);
-				if(strcmp(tokens[p].str+1, "bl") == 0)
-					return reg_b(3);
-				if(strcmp(tokens[p].str+1, "ah") == 0)
-					return reg_b(4);
-				if(strcmp(tokens[p].str+1, "ch") == 0)
-					return reg_b(5);
-				if(strcmp(tokens[p].str+1, "dh") == 0)
-					return reg_b(6);
-				if(strcmp(tokens[p].str+1, "bh") == 0)
-					return reg_b(7);
-			}
-			if(j == 8)
-				assert(0);
 		}
-		else if(tokens[p].type == 266)
-			return cpu.eip;
-		else{
-			assert("Wrong input\n");
-			return 0;
-		}
-	}
-	else if(check_pare(p, q) == true)
-		return eval(p + 1, q - 1);
-	else{
-		int op, v1, v2;
-		if((q - p == 1) && tokens[p].type == '-')
-			return 0 - eval(q, q);
-		if(((q - p == 1) || (tokens[p + 1].type == '(' && tokens[q].type ==')')) && tokens[p].type == 261){
-			i = eval(p + 1, q);
-			return !i;
-		}
-		if(((q - p == 1) || (tokens[p + 1].type == '(' && tokens[q].type ==')')) && tokens[p].type == '*'){
-			return swaddr_read(eval(p + 1, q), 4);
-		}
-		op = find_dominant_operator(p, q);
-
-		v1 = eval(p, op - 1);
-		v2 = eval(op + 1, q);
 		
-		switch(tokens[op].type){
-			case '+': return v1 + v2;
-			case '-': return v1 - v2;
-			case '*': return v1 * v2;
-			case '/': return v1 / v2;
-			case 257:
-				if(v1 == v2) return 1;
-				else return 0;
-			case 258:
-				if(v1 != v2) return 1;
-				else return 0;
-			case 259:
-				if(v1 && v2) return 1;
-				else return 0;
-			case 260:
-				if(v1 || v2) return 1;
-				else return 0;
-			default: 
-				assert("Wrong input\n");
-				return 0;				
-		}
+		return num;
 	}
-	return 0;
+		else if(check_parentheses(l, r) == true)
+			return eval(l + 1, r - 1);
+		else{
+			int op = dominant_operator(l, r);
+			if(l == op || tokens[op].type == POINTER || tokens[op].type == MINUS || tokens[op].type == '!'){
+				uint32_t val = eval(l + 1, r);
+				switch(tokens[l].type){
+					case POINTER:
+						current_sreg = R_DS;
+						return swaddr_read(val, 4);
+					case MINUS:
+						return -val;
+					case '!':
+						return !val;
+					default:
+						Assert(1, "default\n");
+				}
+			}
+			uint32_t v1 = eval(l, op - 1);
+			uint32_t v2 = eval(op + 1, r);
+			switch(tokens[op].type){
+				case '+': return v1 + v2;
+				case '-': return v1 - v2;
+				case '*': return v1 * v2;
+				case '/': return v1 / v2;
+				case EQ: return v1 == v2;
+				case NEQ: return v1 != v2;
+				case AND: return v1 && v2;
+				case OR: return v1 || v2;
+				default:
+				break;
+			}
+		}	
+	assert(1);
+	return -1;
 }
 
 uint32_t expr(char *e, bool *success) {
@@ -333,7 +256,17 @@ uint32_t expr(char *e, bool *success) {
 	}
 
 	/* TODO: Insert codes to evaluate the expression. */
-	int a;
-	a = eval(0, nr_token - 1);
-	return a;
+	int i;
+	for(i = 0; i < nr_token; i++){
+		if((tokens[i].type = '*') && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
+			tokens[i].type = POINTER;
+			tokens[i].priority = 6;		
+		}
+		if((tokens[i].type = '-') && (i == 0 || (tokens[i - 1].type != NUMBER && tokens[i - 1].type != HEX && tokens[i - 1].type != REGISTER && tokens[i - 1].type != MARK && tokens[i - 1].type != ')' ))){
+			tokens[i].type = MINUS;
+			tokens[i].priority = 6;		
+		}
+	}
+	*success = true;
+	return eval(0, nr_token - 1);
 }
