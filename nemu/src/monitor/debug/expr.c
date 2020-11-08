@@ -12,8 +12,7 @@ enum {
 	EQ, NOTEQ, OR, AND,
  	NOT, NEG, POINTER,
 	LB, RB, HEX, DEC, REG, MARK
-	//WARNING!! NOTEQ first and then NOT !!
-	//WARNING!! HEX first and then DEC !!
+	
 
 	/* TODO: Add more token types */
 
@@ -86,7 +85,7 @@ static bool make_token(char *e) {
 		/* Try all rules one by one. */
 		for(i = 0; i < NR_REGEX; i ++) {
 			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
-				//char *substr_start = e + position;
+				
 				int substr_len = pmatch.rm_eo;
 				//Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
 				position += substr_len;
@@ -98,7 +97,7 @@ static bool make_token(char *e) {
 
 				switch(rules[i].token_type) {
 					case NOTYPE:
-						break;											//It's blank!
+						break;											
 					case HEX:case DEC:case REG:case MARK:
 						strncpy(tokens[nr_token].str, e + position - substr_len, substr_len);//regs or number
 						tokens[nr_token].str[substr_len] = '\0';		//add '\0', it's very important
