@@ -35,19 +35,19 @@ __attribute__((used)) static int format_FLOAT(FILE *stream, FLOAT f) {
 }
 
 static void modify_vfprintf() {
-	int addr = &_vfprintf_internal;	//begin
+	int addr = &_vfprintf_internal;	
 
-	//mprotect((void *)((addr + 0x306 - 0x64) & 0xfffff000), 4096 * 2, PROT_READ | PROT_WRITE | PROT_EXEC);
+	mprotect((void *)((addr + 0x306 - 0x64) & 0xfffff000), 4096 * 2, PROT_READ | PROT_WRITE | PROT_EXEC);
 
-	// guess what?
-	char *sub = (char *)(addr + 0x306 - 0xb);	//guess what?
-	*sub = 0x8;		//guess what?
+	
+	char *sub = (char *)(addr + 0x306 - 0xb);	
+	*sub = 0x8;		
 	sub = (char *)(addr + 0x306 - 0xa);
-	*sub = 0xff;	//guess what?
+	*sub = 0xff;	
 	sub = (char *)(addr + 0x306 - 0x9);
-	*sub = 0x32;	//guess what?
+	*sub = 0x32;	
 	sub = (char *)(addr + 0x306 - 0x8);
-	*sub = 0x90;	//guess what?
+	*sub = 0x90;	
 
 	sub = (char *)(addr + 0x306 - 30);
 	*sub = 0x90;
@@ -111,7 +111,7 @@ static void modify_vfprintf() {
 static void modify_ppfs_setargs() {
 	int addr = &_ppfs_setargs;
 
-	//mprotect((void *)((addr + 0x73 - 0x64) & 0xfffff000), 4096 * 2, PROT_READ | PROT_WRITE | PROT_EXEC);
+	mprotect((void *)((addr + 0x73 - 0x64) & 0xfffff000), 4096 * 2, PROT_READ | PROT_WRITE | PROT_EXEC);
 
 	char *pos = (char *)(addr + 0x71);
 	*pos = 0xeb;
@@ -119,7 +119,6 @@ static void modify_ppfs_setargs() {
 	*pos = 0x30;
 	pos = (char *)(addr + 0x73);
 	*pos = 0x90;
-	//guess guess guess what???
 
 	
 	/* TODO: Implement this function to modify the action of preparing

@@ -30,8 +30,6 @@ FLOAT F_div_F(FLOAT a, FLOAT b) {
 	if (b < 0) sign = -sign, b = -b;
 	int res = a / b;
 	a = a % b;
-	//you can't just return (a/b)<<16
-	//which will lose last 16 bits
 	int i;
 	for (i = 0; i < 16; i++) 
 	{
@@ -52,14 +50,14 @@ FLOAT f2F(float a) {
 	 * stack. How do you retrieve it to another variable without
 	 * performing arithmetic operations on it directly?
 	 */
-	int b = *(int *)&a;//read float to int, you can't use (int)a
-	int sign = b & 0x80000000;//sign
-	int exp = (b >> 23) & 0xff;//exp
-	int last = b & 0x7fffff;	//get last 23 bits
-	if(exp == 255) return sign ? -0x7fffffff : 0x7fffffff;//inf, ignore NaN
-	if(exp == 0) return 0;//0, ignore another one
+	int b = *(int *)&a;
+	int sign = b & 0x80000000;
+	int exp = (b >> 23) & 0xff;
+	int last = b & 0x7fffff;	
+	if(exp == 255) return sign ? -0x7fffffff : 0x7fffffff;
+	if(exp == 0) return 0;
 	last |= 1 << 23;
-	exp -= 134;	//guess why?
+	exp -= 134;	
 	if (exp < 0) last >>= -exp;
 	if (exp > 0) last <<= exp;
 
@@ -69,7 +67,7 @@ FLOAT f2F(float a) {
 FLOAT Fabs(FLOAT a) {
 	return a < 0 ? -a : a;
 }
-//Debug Use
+
 float toFloat(FLOAT s) {
 	int sign = 1, i;
 	if(s < 0)sign = -1,s = -s;
