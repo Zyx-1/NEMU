@@ -2,6 +2,8 @@
 
 .PHONY: nemu entry testcase kernel run gdb test submit clean
 
+
+
 CC := gcc
 LD := ld
 CFLAGS := -MMD -Wall -Werror -c
@@ -10,21 +12,23 @@ LIB_COMMON_DIR := lib-common
 LIBC_INC_DIR := $(LIB_COMMON_DIR)/uclibc/include
 LIBC_LIB_DIR := $(LIB_COMMON_DIR)/uclibc/lib
 LIBC := $(LIBC_LIB_DIR)/libc.a
-#FLOAT := obj/$(LIB_COMMON_DIR)/FLOAT/FLOAT.a
+FLOAT := obj/$(LIB_COMMON_DIR)/FLOAT/FLOAT.a
 
 include config/Makefile.git
 include config/Makefile.build
 
 all: nemu
 
-
-##### rules for building the project #####
-
 include nemu/Makefile.part
 include testcase/Makefile.part
 include lib-common/FLOAT/Makefile.part
 include kernel/Makefile.part
 include game/Makefile.part
+
+
+##### rules for building the project #####
+
+
 
 nemu: $(nemu_BIN)
 testcase: $(testcase_BIN)
@@ -33,6 +37,9 @@ game: $(game_BIN)
 
 
 ##### rules for cleaning the project #####
+
+count:
+	find ./ -name "*.c" -o -name "*.h" |xargs cat|wc -l
 
 clean-nemu:
 	-rm -rf obj/nemu 2> /dev/null
@@ -53,8 +60,8 @@ clean: clean-cpp
 
 ##### some convinient rules #####
 
-USERPROG := obj/testcase/hello-str
-ENTRY := $(USERPROG)
+USERPROG := obj/testcase/print-FLOAT
+ENTRY := $(kernel_BIN)
 
 entry: $(ENTRY)
 	objcopy -S -O binary $(ENTRY) entry
