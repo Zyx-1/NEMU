@@ -10,7 +10,6 @@ void dram_write(hwaddr_t, size_t, uint32_t);
 /* Memory accessing interfaces */
 
 uint32_t hwaddr_read(hwaddr_t addr, size_t len) {
-	//printf("pp : %x\n",addr);
 	int first_id = readCache(addr);	//get cache id
 	uint32_t offset = addr & (CACHE_BLOCK_SIZE - 1);
 	uint8_t temp[2 * BURST_LEN];
@@ -22,7 +21,7 @@ uint32_t hwaddr_read(hwaddr_t addr, size_t len) {
 	} else {
 		memcpy(temp, cache[first_id].data + offset, len);
 	}
-	//hehe
+	
 	int zero = 0;
 	uint32_t tmp = unalign_rw(temp + zero, 4) & (~0u >> ((4 - len) << 3));
 	return tmp;
@@ -34,7 +33,6 @@ void hwaddr_write(hwaddr_t addr, size_t len, uint32_t data) {	//physical address
 
 hwaddr_t page_translate(lnaddr_t addr, size_t len) {
 	if(cpu.cr0.protect_enable && cpu.cr0.paging) {
-	//	printf("%x\n",addr);
 		hwaddr_t tmpad;
 		if((tmpad = readTLB(addr & 0xfffff000)) != -1) return (tmpad << 12) + (addr & 0xfff);
 		PageEntry dir, page;
@@ -45,8 +43,6 @@ hwaddr_t page_translate(lnaddr_t addr, size_t len) {
 		Assert(dir.p, "Invalid page. %x", addr);
 		page.val = hwaddr_read((dir.base << 12) + (page_offset << 2), 4);
 		Assert(page.p, "Invalid page. %x", addr);
-	//	hwaddr_t hwaddr = (page.base << 12) + offset;
-		//Assert((hwaddr & 0xfff) + len == ((hwaddr + len) & 0xfff), "Fatal Error!!");
 		writeTLB(addr & 0xfffff000, page.base);
 		return (page.base << 12) + offset;
 	} else {
