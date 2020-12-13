@@ -10,6 +10,7 @@ void dram_write(hwaddr_t, size_t, uint32_t);
 /* Memory accessing interfaces */
 
 uint32_t hwaddr_read(hwaddr_t addr, size_t len) {
+	//printf("pp : %x\n",addr);
 	int first_id = readCache(addr);	//get cache id
 	uint32_t offset = addr & (CACHE_BLOCK_SIZE - 1);
 	uint8_t temp[2 * BURST_LEN];
@@ -28,7 +29,7 @@ uint32_t hwaddr_read(hwaddr_t addr, size_t len) {
 }
 
 void hwaddr_write(hwaddr_t addr, size_t len, uint32_t data) {	//physical address
-	dram_write(addr, len, data);
+	writeCache(addr, len, data);
 }
 
 hwaddr_t page_translate(lnaddr_t addr, size_t len) {
@@ -102,4 +103,3 @@ void swaddr_write(swaddr_t addr, size_t len, uint32_t data, uint8_t sreg) {	//vi
 	lnaddr_t lnaddr = seg_translate(addr, len, sreg);
 	lnaddr_write(lnaddr, len, data);
 }
-
